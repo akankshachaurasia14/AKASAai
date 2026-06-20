@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AKASAai — Your Personal Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --pink:#ff3d9a;
+    --pink-bright:#ff8fc7;
+    --pink-deep:#c2186b;
+    --violet:#8a4fff;
+    --bg:#15101c;
+    --bg-2:#1d1626;
+    --panel:#221a2e;
+    --panel-2:#2a2038;
+    --text:#f3edf7;
+    --text-dim:#cfc6db;
+    --text-faint:#8d82a0;
+    --border:rgba(255,255,255,0.08);
+    --bubble-user:#3a2a4a;
+    --bubble-bot:#2a2038;
+    --shadow-glow:0 0 40px rgba(255,61,154,0.25);
+    --radius-lg:22px;
+    --radius-md:14px;
+    --font-display:'Space Grotesk',sans-serif;
+    --font-body:'Inter',sans-serif;
+  }
+
+  [data-theme="light"]{
+    --bg:#fdf6fb;
+    --bg-2:#f7ecf4;
+    --panel:#ffffff;
+    --panel-2:#fdf0f8;
+    --text:#3a1f33;
+    --text-dim:#6e4f64;
+    --text-faint:#a883a0;
+    --border:rgba(58,31,51,0.08);
+    --bubble-user:#ffe1f0;
+    --bubble-bot:#ffffff;
+    --shadow-glow:0 0 40px rgba(255,61,154,0.15);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:var(--font-body);
+    background:
+      radial-gradient(circle at 15% 0%, rgba(138,79,255,0.18), transparent 45%),
+      radial-gradient(circle at 85% 10%, rgba(255,61,154,0.16), transparent 50%),
+      var(--bg);
+    color:var(--text);
+    min-height:100vh;
+    overflow-x:hidden;
+    transition:background-color .5s ease, color .4s ease;
+  }
+
+  /* ambient floating particles */
+  .bg-orbs{position:fixed;inset:0;overflow:hidden;z-index:0;pointer-events:none;}
+  .orb{
+    position:absolute;border-radius:50%;
+    background:radial-gradient(circle, rgba(255,61,154,0.35), transparent 70%);
+    filter:blur(10px);
+    animation:float 18s ease-in-out infinite;
+  }
+  .orb.o1{width:260px;height:260px;top:-60px;left:-80px;animation-duration:22s;}
+  .orb.o2{width:180px;height:180px;top:60%;right:-60px;background:radial-gradient(circle, rgba(138,79,255,0.3), transparent 70%);animation-duration:26s;animation-delay:2s;}
+  .orb.o3{width:140px;height:140px;bottom:-40px;left:30%;animation-duration:20s;animation-delay:4s;}
+  @keyframes float{
+    0%,100%{transform:translate(0,0) scale(1);}
+    50%{transform:translate(30px,-40px) scale(1.08);}
+  }
+
+  .app{
+    position:relative;z-index:1;
+    max-width:640px;margin:0 auto;
+    min-height:100vh;
+    display:flex;flex-direction:column;
+    padding:18px 16px 16px;
+  }
+
+  /* header */
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:6px 4px 18px;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand h1{
+    font-family:var(--font-display);
+    font-size:1.3rem;font-weight:700;letter-spacing:0.5px;
+    margin:0;
+    background:linear-gradient(90deg,var(--pink-bright),var(--violet));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .brand .tag{font-size:0.72rem;color:var(--text-faint);margin-top:1px;letter-spacing:0.4px;}
+
+  .theme-toggle{
+    display:flex;align-items:center;gap:8px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    padding:6px 10px;border-radius:999px;
+    cursor:pointer;user-select:none;
+    transition:background .3s, transform .15s;
+  }
+  .theme-toggle:hover{transform:translateY(-1px);}
+  .theme-toggle:active{transform:scale(0.96);}
+  .theme-toggle svg{width:16px;height:16px;display:block;}
+  .theme-toggle .lbl{font-size:0.78rem;color:var(--text-dim);font-weight:500;}
+
+  /* hero orb */
+  .orb-wrap{
+    display:flex;flex-direction:column;align-items:center;
+    padding:8px 0 22px;
+  }
+  .aura{
+    position:relative;width:118px;height:118px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .aura::before{
+    content:"";position:absolute;inset:-14px;border-radius:50%;
+    background:conic-gradient(from 0deg, var(--pink), var(--violet), var(--pink-bright), var(--pink));
+    filter:blur(16px);opacity:0.55;
+    animation:spin 6s linear infinite;
+  }
+  .aura.speaking::before{opacity:0.95;filter:blur(20px);animation-duration:2.2s;}
+  .aura.listening::before{opacity:0.85;animation-duration:1.4s;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .core{
+    position:relative;width:92px;height:92px;border-radius:50%;
+    background:linear-gradient(145deg,var(--pink),var(--violet) 120%);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:var(--shadow-glow), inset 0 2px 12px rgba(255,255,255,0.25);
+    animation:breathe 4s ease-in-out infinite;
+  }
+  .aura.speaking .core{animation:breathe 0.7s ease-in-out infinite;}
+  @keyframes breathe{
+    0%,100%{transform:scale(1);}
+    50%{transform:scale(1.06);}
+  }
+  .core span{
+    font-family:var(--font-display);font-weight:700;color:#fff;font-size:1.6rem;letter-spacing:1px;
+  }
+  .status-line{
+    margin-top:14px;font-size:0.8rem;color:var(--text-faint);
+    display:flex;align-items:center;gap:6px;font-weight:500;
+  }
+  .status-dot{width:7px;height:7px;border-radius:50%;background:var(--pink);box-shadow:0 0 8px var(--pink);}
+
+  /* chat */
+  .chat-shell{
+    flex:1;display:flex;flex-direction:column;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius-lg);
+    overflow:hidden;
+    box-shadow:0 20px 50px -20px rgba(0,0,0,0.4);
+  }
+  .chat-area{
+    flex:1;padding:18px;overflow-y:auto;
+    display:flex;flex-direction:column;gap:12px;
+    min-height:280px;max-height:46vh;
+    scroll-behavior:smooth;
+  }
+  .chat-area::-webkit-scrollbar{width:6px;}
+  .chat-area::-webkit-scrollbar-thumb{background:var(--pink-deep);border-radius:10px;opacity:0.5;}
+
+  .msg{
+    max-width:80%;
+    padding:11px 15px;
+    border-radius:var(--radius-md);
+    font-size:0.93rem;line-height:1.45;
+    animation:rise .35s ease both;
+    word-wrap:break-word;
+  }
+  @keyframes rise{
+    from{opacity:0;transform:translateY(10px);}
+    to{opacity:1;transform:translateY(0);}
+  }
+  .msg.bot{
+    align-self:flex-start;
+    background:var(--bubble-bot);
+    border:1px solid var(--border);
+    border-bottom-left-radius:4px;
+    color:var(--text);
+  }
+  .msg.user{
+    align-self:flex-end;
+    background:linear-gradient(135deg,var(--pink),var(--pink-deep));
+    color:#fff;
+    border-bottom-right-radius:4px;
+  }
+  .msg .who{
+    display:block;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.6px;
+    opacity:0.6;margin-bottom:3px;font-weight:600;
+  }
+
+  .typing{
+    align-self:flex-start;display:flex;gap:4px;padding:12px 16px;
+    background:var(--bubble-bot);border:1px solid var(--border);
+    border-radius:var(--radius-md);border-bottom-left-radius:4px;
+  }
+  .typing span{
+    width:6px;height:6px;border-radius:50%;background:var(--pink);
+    animation:bounce 1.1s infinite ease-in-out;
+  }
+  .typing span:nth-child(2){animation-delay:.15s;}
+  .typing span:nth-child(3){animation-delay:.3s;}
+  @keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:0.4;}40%{transform:translateY(-5px);opacity:1;}}
+
+  /* quick chips */
+  .chips{
+    display:flex;gap:8px;padding:0 16px 12px;flex-wrap:wrap;
+    border-top:1px solid var(--border);
+    padding-top:12px;
+  }
+  .chip{
+    font-size:0.76rem;padding:7px 12px;border-radius:999px;
+    background:var(--panel-2);color:var(--text-dim);
+    border:1px solid var(--border);cursor:pointer;
+    font-weight:500;transition:transform .15s, background .2s, color .2s;
+    white-space:nowrap;
+  }
+  .chip:hover{background:var(--pink);color:#fff;transform:translateY(-2px);}
+
+  /* input bar */
+  .input-bar{
+    display:flex;align-items:center;gap:8px;
+    padding:12px 14px;border-top:1px solid var(--border);
+    background:var(--panel-2);
+  }
+  .input-bar input{
+    flex:1;border:none;outline:none;background:transparent;
+    color:var(--text);font-family:var(--font-body);font-size:0.95rem;
+    padding:10px 4px;
+  }
+  .input-bar input::placeholder{color:var(--text-faint);}
+
+  .icon-btn{
+    width:42px;height:42px;border-radius:50%;border:none;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--panel);color:var(--text-dim);
+    transition:transform .15s, background .2s, color .2s, box-shadow .2s;
+    flex:none;
+  }
+  .icon-btn:hover{transform:translateY(-1px);}
+  .icon-btn:active{transform:scale(0.92);}
+  .icon-btn svg{width:18px;height:18px;}
+
+  .send-btn{
+    background:linear-gradient(135deg,var(--pink),var(--violet));
+    color:#fff;box-shadow:0 6px 18px -6px rgba(255,61,154,0.6);
+  }
+  .mic-btn.active{
+    background:linear-gradient(135deg,var(--pink),var(--pink-deep));
+    color:#fff;
+    box-shadow:0 0 0 0 rgba(255,61,154,0.6);
+    animation:pulse-ring 1.4s infinite;
+  }
+  @keyframes pulse-ring{
+    0%{box-shadow:0 0 0 0 rgba(255,61,154,0.55);}
+    70%{box-shadow:0 0 0 14px rgba(255,61,154,0);}
+    100%{box-shadow:0 0 0 0 rgba(255,61,154,0);}
+  }
+
+  footer{
+    text-align:center;padding:14px 0 4px;
+    font-size:0.7rem;color:var(--text-faint);letter-spacing:0.3px;
+  }
+
+  @media (max-width:480px){
+    .chat-area{max-height:50vh;}
+    .brand h1{font-size:1.1rem;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001s !important; animation-iteration-count:1 !important;}
+  }
+</style>
+</head>
+<body data-theme="dark">
+
+<div class="bg-orbs">
+  <div class="orb o1"></div>
+  <div class="orb o2"></div>
+  <div class="orb o3"></div>
+</div>
+
+<div class="app">
+
+  <header>
+    <div class="brand">
+      <h1>AKASAai</h1>
+    </div>
+    <div class="theme-toggle" id="themeToggle" role="button" aria-label="Toggle dark or bright theme" tabindex="0">
+      <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+      <span class="lbl" id="themeLabel">Dark</span>
+    </div>
+  </header>
+
+  <div class="orb-wrap">
+    <div class="aura" id="aura">
+      <div class="core"><span>A</span></div>
+    </div>
+    <div class="status-line"><span class="status-dot" id="statusDot"></span><span id="statusText">Idle — say or type a command</span></div>
+  </div>
+
+  <div class="chat-shell">
+    <div class="chat-area" id="chatArea"></div>
+
+    <div class="chips" id="chips">
+      <div class="chip" data-cmd="dark theme">🌙 Dark theme</div>
+      <div class="chip" data-cmd="bright theme">☀️ Bright theme</div>
+      <div class="chip" data-cmd="what can you do">✨ What can you do?</div>
+      <div class="chip" data-cmd="play music">🎵 Play music</div>
+      <div class="chip" data-cmd="time">🕐 Time</div>
+      <div class="chip" data-cmd="joke">😄 Tell a joke</div>
+    </div>
+
+    <div class="input-bar">
+      <button class="icon-btn mic-btn" id="micBtn" aria-label="Voice input" title="Voice command">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+          <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+      </button>
+      <input type="text" id="cmdInput" placeholder="Type a command… e.g. 'switch to dark theme'" autocomplete="off">
+      <button class="icon-btn send-btn" id="sendBtn" aria-label="Send">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <footer>AKASAai · Python (Flask) backend · runs locally on your machine</footer>
+</div>
+
+<script>
+/* ============ ICONS ============ */
+const moonIcon = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>`;
+const sunIcon = `<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>`;
+
+const themeIconEl = document.getElementById('themeIcon');
+const themeLabelEl = document.getElementById('themeLabel');
+const bodyEl = document.body;
+
+function setTheme(mode, announce){
+  bodyEl.setAttribute('data-theme', mode);
+  localStorage.setItem('akasaai-theme', mode);
+  if(mode === 'light'){
+    themeIconEl.innerHTML = sunIcon;
+    themeLabelEl.textContent = 'Bright';
+  } else {
+    themeIconEl.innerHTML = moonIcon;
+    themeLabelEl.textContent = 'Dark';
+  }
+  if(announce){
+    addMessage(mode === 'light' ? "Switched to bright theme. ☀️" : "Switched to dark theme. 🌙", 'bot');
+    speak(mode === 'light' ? "Switched to bright theme." : "Switched to dark theme.");
+  }
+}
+
+// init theme from storage or system preference
+(function initTheme(){
+  const saved = localStorage.getItem('akasaai-theme');
+  if(saved){ setTheme(saved, false); }
+  else {
+    const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+    setTheme(prefersLight ? 'light' : 'dark', false);
+  }
+})();
+
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const current = bodyEl.getAttribute('data-theme');
+  setTheme(current === 'dark' ? 'light' : 'dark', true);
+});
+document.getElementById('themeToggle').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); document.getElementById('themeToggle').click(); }
+});
+
+/* ============ CHAT ============ */
+const chatArea = document.getElementById('chatArea');
+const aura = document.getElementById('aura');
+const statusDot = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+
+function setStatus(text, mode){
+  statusText.textContent = text;
+  aura.classList.remove('speaking','listening');
+  if(mode) aura.classList.add(mode);
+}
+
+function addMessage(text, who){
+  const div = document.createElement('div');
+  div.className = `msg ${who}`;
+  const label = document.createElement('span');
+  label.className = 'who';
+  label.textContent = who === 'user' ? 'You' : 'AKASAai';
+  div.appendChild(label);
+  div.appendChild(document.createTextNode(text));
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function showTyping(){
+  const t = document.createElement('div');
+  t.className = 'typing';
+  t.id = 'typingIndicator';
+  t.innerHTML = '<span></span><span></span><span></span>';
+  chatArea.appendChild(t);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+function hideTyping(){
+  const t = document.getElementById('typingIndicator');
+  if(t) t.remove();
+}
+
+/* ============ VOICE OUTPUT ============ */
+let preferredVoice = null;
+function pickVoice(){
+  if(!('speechSynthesis' in window)) return;
+  const voices = window.speechSynthesis.getVoices();
+  if(!voices.length) return;
+  preferredVoice = voices.find(v => /male/i.test(v.name)) ||
+                   voices.find(v => /David|Daniel|Alex|Google UK English Male/i.test(v.name)) ||
+                   voices[0];
+}
+if('speechSynthesis' in window){
+  pickVoice();
+  window.speechSynthesis.onvoiceschanged = pickVoice;
+}
+
+function speak(text){
+  if(!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  if(preferredVoice) utter.voice = preferredVoice;
+  utter.rate = 1.0;
+  utter.pitch = 1.0;
+  utter.onstart = () => setStatus('Speaking…', 'speaking');
+  utter.onend = () => setStatus('Idle — say or type a command', null);
+  window.speechSynthesis.speak(utter);
+}
+
+/* ============ VOICE INPUT ============ */
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let listening = false;
+const micBtn = document.getElementById('micBtn');
+
+if(SpeechRecognition){
+  recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = () => {
+    listening = true;
+    micBtn.classList.add('active');
+    setStatus('Listening…', 'listening');
+  };
+  recognition.onerror = () => {
+    listening = false;
+    micBtn.classList.remove('active');
+    setStatus('Idle — say or type a command', null);
+  };
+  recognition.onend = () => {
+    listening = false;
+    micBtn.classList.remove('active');
+  };
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript.trim();
+    if(transcript){
+      addMessage(transcript, 'user');
+      handleCommand(transcript.toLowerCase());
+    }
+  };
+}
+
+micBtn.addEventListener('click', () => {
+  if(!recognition){
+    addMessage("Voice input isn't supported in this browser. Try Chrome or Edge, or just type your command below.", 'bot');
+    speak("Voice input isn't supported in this browser.");
+    return;
+  }
+  if(listening){
+    recognition.stop();
+  } else {
+    try{ recognition.start(); }catch(e){ /* already started */ }
+  }
+});
+
+/* ============ COMMAND LOGIC (now delegated to the Python backend) ============ */
+async function getResponseFromServer(command){
+  try{
+    const res = await fetch('/api/command', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({command})
+    });
+    if(!res.ok) throw new Error('Server error: ' + res.status);
+    const data = await res.json();
+    return data.response;
+  }catch(err){
+    return "I couldn't reach my Python backend. Make sure app.py is still running in your terminal.";
+  }
+}
+
+function handleCommand(command){
+  setTimeout(() => {
+    showTyping();
+    (async () => {
+      let response = await getResponseFromServer(command);
+      // small extra delay so the typing indicator feels natural
+      await new Promise(r => setTimeout(r, 300 + Math.random() * 300));
+      hideTyping();
+
+      if(response === '__GOODBYE__'){
+        addMessage("Goodbye! Have a wonderful day. 💗", 'bot');
+        speak("Goodbye! Have a wonderful day.");
+        return;
+      }
+      if(response === '__THEME_DARK__'){
+        setTheme('dark', true);
+        return;
+      }
+      if(response === '__THEME_LIGHT__'){
+        setTheme('light', true);
+        return;
+      }
+      if(response.startsWith('__OPEN__')){
+        const rest = response.slice('__OPEN__'.length);
+        const sepIndex = rest.indexOf('__');
+        const url = rest.slice(0, sepIndex);
+        const message = rest.slice(sepIndex + 2);
+        window.open(url, '_blank');
+        addMessage(message, 'bot');
+        speak(message);
+        return;
+      }
+
+      addMessage(response, 'bot');
+      speak(response);
+    })();
+  }, 150);
+}
+
+/* ============ INPUT WIRING ============ */
+const cmdInput = document.getElementById('cmdInput');
+const sendBtn = document.getElementById('sendBtn');
+
+function submitCommand(){
+  const text = cmdInput.value.trim();
+  if(!text) return;
+  addMessage(text, 'user');
+  cmdInput.value = '';
+  handleCommand(text.toLowerCase());
+}
+
+sendBtn.addEventListener('click', submitCommand);
+cmdInput.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') submitCommand();
+});
+
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const cmd = chip.getAttribute('data-cmd');
+    addMessage(cmd, 'user');
+    handleCommand(cmd);
+  });
+});
+
+/* ============ WELCOME MESSAGE ============ */
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const welcome = "Hello! I am AKASAai, your personal assistant. Say 'dark theme' or 'bright theme' anytime to change my look. Tap the mic or type to begin.";
+    addMessage(welcome, 'bot');
+    speak(welcome);
+  }, 400);
+});
+</script>
+
+</body>
+</html>
